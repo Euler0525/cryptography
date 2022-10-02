@@ -58,6 +58,12 @@ class VirginiaDecryption(object):
 
         return np.mean(ics)
 
+    """
+    Obtain the key length: 
+    When the key length is i, the coincidence index of each group is calculated, 
+    and the key length closest to 0.065 is the corresponding key length
+    """
+
     def getKeyLength(self) -> int:
         """determine the key length"""
         key_len = 0
@@ -88,8 +94,8 @@ class VirginiaDecryption(object):
         return mg
 
     def getOffset(self, s1: str, s2: str) -> int:
-        """The optimal coincidence index of two strings"""
-        offset = 0
+        """The optimal coincidence index of two stringsand return the most appropriate offset"""
+        offset = 0  # Relative to the first group
         minn = 100
         tmp = [0.0 for _ in range(26)]
         for i in range(26):
@@ -97,12 +103,11 @@ class VirginiaDecryption(object):
             if (abs(tmp[i] - 0.065)) < minn:
                 minn = abs(tmp[i] - 0.065)
                 offset = i
-        return offset
+        return offset  # Offset when Mg and 0.065 are closest
 
     def relativeOffset(self) -> list:
         cipher_len = len(self.ciphertext)
         key_len = self.getKeyLength()
-        mgs = [0 for _ in range(key_len)]
         groups = ["" for _ in range(key_len)]
         offsets = [0 for _ in range(key_len)]
         # group
@@ -111,11 +116,15 @@ class VirginiaDecryption(object):
             groups[index] += self.ciphertext[i]
         for j in range(1, key_len):
             offsets[j] = self.getOffset(groups[0], groups[j])
-            mgs[j] = self.getMg(groups[0], groups[j], offsets[j])
 
         return offsets
 
-    def getKey(self, k: int):
+    """
+    When the key length m is determined, the cipher is divided into M groups, and each group is a single table substitution password.
+    The first group has 26 kinds of offsets, assuming that the offset of the first group is 0, calculate the relative offsets of the second to last group and the first group and the corresponding mutual coincidence index, determine each character of the key, and list the 26 kinds of offsets
+    """
+
+    def getKey(self, k: int) -> list:
         s = self.relativeOffset()
         key_len = self.getKeyLength()
         key = ["" for _ in range(key_len)]
@@ -126,7 +135,7 @@ class VirginiaDecryption(object):
         print("偏移量:{0: >2}-密钥为\"{1}\"时, 部分明文: ".format(k, key), end=" ")
         return s
 
-    def getPlain(self, key: str):
+    def getPlain(self, key: str) -> str:
         plaintext = ""
         key_len = self.getKeyLength()
         i = 0
@@ -138,7 +147,7 @@ class VirginiaDecryption(object):
                     break
         return plaintext
 
-    def decryption(self):
+    def decryption(self) -> str:
         s = self.relativeOffset()
         for k in range(26):
             tmp = s.copy()
